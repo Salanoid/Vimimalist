@@ -38,6 +38,12 @@ To use this configuration to its fullest, make sure you have the following insta
   curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
   ```
+  
+  I actually use it with neovim:
+  ```bash
+  sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
+      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  ```
 
 ## Features
 
