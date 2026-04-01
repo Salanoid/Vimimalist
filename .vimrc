@@ -55,6 +55,7 @@ set diffopt+=vertical
 set tags=./tags;,tags;
 set complete=.,w,b,u,t
 set completeopt=menuone,noinsert,noselect
+set grepprg=rg\ --vimgrep\ --no-heading\ --smart-case
 
 if has('termguicolors')
     set termguicolors
@@ -114,7 +115,12 @@ if executable('rg')
   nnoremap <leader>F :Rg <C-R><C-W><CR>
   " Interactive live grep with <leader>f
   nnoremap <leader>f :Rg<Space>
+  " Find with grep (adds everything to quickfix list)
+  nnoremap <leader>fg :silent grep<Space>
 endif
+
+"Open quickfix list
+nnoremap <leader>q :copen<Space><CR>
 
 " Generate ctags (requires `ctags -R` available)
 nnoremap <leader>t :!ctags -R .<CR><CR>
