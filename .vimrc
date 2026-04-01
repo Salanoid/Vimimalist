@@ -1,67 +1,29 @@
-" ========== Plugin Manager ==========
-call plug#begin('~/.vim/plugged')
+call plug#begin()
 
-" File navigation
+Plug 'ericbn/vim-solarized'
+Plug 'prabirshrestha/vim-lsp'
+Plug 'mattn/vim-lsp-settings'
 Plug 'preservim/nerdtree'
 Plug 'ctrlpvim/ctrlp.vim'
-
-" Git integration
 Plug 'tpope/vim-fugitive'
-
-" For better diff and staging support
 Plug 'junegunn/gv.vim'
-
-" Git show changed lines
 Plug 'airblade/vim-gitgutter'
-
-" Ruby and Rails
 Plug 'vim-ruby/vim-ruby'
 Plug 'tpope/vim-rails'
-
-" Commenting
 Plug 'tpope/vim-commentary'
-
-" Better search
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
-
-" Elixir
-Plug 'elixir-editors/vim-elixir'
-
-" Surroundings like (), {}, "", etc.
 Plug 'tpope/vim-surround'
-
-" Markdown
 Plug 'plasticboy/vim-markdown'
-
-" Test runner
-Plug 'vim-test/vim-test'
-
-" Useful mappings
 Plug 'tpope/vim-unimpaired'
-
-" Optional: syntax highlighting for Rust, TypeScript, Go, Java
 Plug 'rust-lang/rust.vim'
 Plug 'leafgarland/typescript-vim'
-Plug 'HerringtonDarkholme/yats.vim'
-Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
-Plug 'uiiaoo/java-syntax.vim'
-
-" Supertab
 Plug 'ervandew/supertab'
-
-" Visual undo tree
 Plug 'mbbill/undotree'
-
-" Tagbar display ctags in a window
 Plug 'preservim/tagbar'
-
-" Theme
-Plug 'joshdick/onedark.vim'
 
 call plug#end()
 
-" ========== General Settings ==========
 syntax on
 filetype plugin indent on
 set autoindent
@@ -85,7 +47,7 @@ set bs=2
 set history=100
 set autowrite
 set nobackup
-set noswapfile    " http://robots.thoughtbot.com/post/18739402579/global-gitignore#comment-458413287
+set noswapfile
 set nowritebackup
 set nowrap
 set list listchars=tab:»·,trail:·,nbsp:·
@@ -94,29 +56,57 @@ set tags=./tags;,tags;
 set complete=.,w,b,u,t
 set completeopt=menuone,noinsert,noselect
 
-" ========== Leader and Remaps ==========
+if has('termguicolors')
+    set termguicolors
+endif
+syntax enable
+set background=dark
+colorscheme solarized
+
 let mapleader = " "
 
-" Save file
-nnoremap <leader>w :w<CR>
+if executable('ruby-lsp')
+    au User lsp_setup call lsp#register_server({
+        \ 'name': 'ruby-lsp',
+        \ 'cmd': {server_info->['ruby-lsp']},
+        \ 'allowlist': ['ruby'],
+        \ })
+endif
 
-" Quit
-nnoremap <leader>q :q<CR>
+function! s:on_lsp_buffer_enabled() abort
+    setlocal omnifunc=lsp#complete
+    setlocal signcolumn=yes
+    if exists('+tagfunc') | setlocal tagfunc=lsp#tagfunc | endif
+    nmap <buffer> gd <plug>(lsp-definition)
+    nmap <buffer> gs <plug>(lsp-document-symbol-search)
+    nmap <buffer> gS <plug>(lsp-workspace-symbol-search)
+    nmap <buffer> gr <plug>(lsp-references)
+    nmap <buffer> gi <plug>(lsp-implementation)
+    nmap <buffer> gt <plug>(lsp-type-definition)
+    nmap <buffer> <leader>rn <plug>(lsp-rename)
+    nmap <buffer> [g <plug>(lsp-previous-diagnostic)
+    nmap <buffer> ]g <plug>(lsp-next-diagnostic)
+    nmap <buffer> K <plug>(lsp-hover)
+    nnoremap <buffer> <expr><c-k> lsp#scroll(+4)
+    nnoremap <buffer> <expr><c-j> lsp#scroll(-4)
 
-" Replace word under cursor
-nnoremap <leader>s :%s/\<<C-r><C-w>\>//g<Left><Left>
+    let g:lsp_format_sync_timeout = 1000
+    autocmd! BufWritePre *.rs,*.go call execute('LspDocumentFormatSync')
+    
+    " refer to doc to add more commands
+endfunction
 
-" Edit vimrc
-nnoremap <leader>ev :split $MYVIMRC<cr>
-
-" Load vimrc
-nnoremap <leader>sv :source $MYVIMRC<cr>
+augroup lsp_install
+    au!
+    " call s:on_lsp_buffer_enabled only for languages that has the server registered.
+    autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
+augroup END
 
 " Toggle tagbar
 nnoremap <leader>tb :TagbarToggle<CR>
 
 " Open NERDTree
-nnoremap <leader>n :NERDTreeToggle<CR>
+nnoremap <leader>e :NERDTreeToggle<CR>
 
 " Use ripgrep with fzf for live grep search
 if executable('rg')
@@ -125,48 +115,6 @@ if executable('rg')
   " Interactive live grep with <leader>f
   nnoremap <leader>f :Rg<Space>
 endif
-
-" Pure Vim project-wide search & replace
-" Use ripgrep as grep backend
-set grepprg=rg\ --vimgrep
-set grepformat=%f:%l:%c:%m
-
-function! ProjectReplace()
-  let old = input('🔍 Search for: ')
-  if empty(old)
-    echo "❌ Cancelled"
-    return
-  endif
-
-  let new = input('🔁 Replace with: ')
-  if empty(new)
-    echo "❌ Cancelled"
-    return
-  endif
-
-  " Save command to run after grep populates quickfix
-  let g:LastProjectReplaceCmd = ':cfdo %s/' . escape(old, '/') . '/' . escape(new, '/') . '/gc | update'
-
-  " Use grep to populate quickfix list using ripgrep
-  execute 'silent grep! ' . shellescape(old)
-
-  " Show quickfix list
-  copen
-
-  echo "✅ Run :ProjectDoReplace or <leader>sR to confirm replacements"
-endfunction
-
-function! ProjectDoReplace()
-  if exists('g:LastProjectReplaceCmd')
-    execute g:LastProjectReplaceCmd
-  else
-    echo "⚠️ No saved replacement command found"
-  endif
-endfunction
-
-" Mappings
-nnoremap <leader>sr :call ProjectReplace()<CR>
-nnoremap <leader>sR :call ProjectDoReplace()<CR>
 
 " Generate ctags (requires `ctags -R` available)
 nnoremap <leader>t :!ctags -R .<CR><CR>
@@ -179,17 +127,11 @@ nnoremap <leader>P "+P
 " Undotree
 nnoremap <leader>u :UndotreeToggle<CR>
 
-" ========== Kitty Integration ==========
-" Enable bracketed paste and proper clipboard integration
-set ttymouse=sgr
-
 " ========== Pane Navigation ==========
 nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
-
-" ========== Plugin Settings ==========
 
 " CtrlP
 let g:ctrlp_cmd = 'CtrlP'
@@ -199,19 +141,12 @@ let g:NERDTreeShowHidden=1
 let g:NERDTreeQuitOnOpen=1
 let g:NERDTreeMinimalUI=1
 
-" Vim-Test
-let test#strategy = "neovim"
-
 " Vim-Markdown
 let g:vim_markdown_folding_disabled = 1
 
 " Rust plugin (optional)
 let g:rustfmt_autosave = 1
 
-" Elixir format (optional)
-autocmd BufWritePre *.exs,*.ex :silent! execute '%!mix format -'
-
-" ========== Autocommands ==========
 " Automatically reload file if changed externally
 autocmd FocusGained,BufEnter * checktime
 
@@ -224,12 +159,6 @@ augroup END
 
 " ========== Optional Performance Tweaks ==========
 set lazyredraw
-
-" ========== Colorscheme ==========
-if has('termguicolors')
-  set termguicolors
-endif
-colorscheme onedark
 
 " This should save and restor session, keep this at the end of your config
 
