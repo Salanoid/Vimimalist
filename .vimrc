@@ -1,6 +1,6 @@
 call plug#begin()
 
-Plug 'ericbn/vim-solarized'
+Plug 'https://codeberg.org/lifepillar/vim-solarized8'
 Plug 'prabirshrestha/vim-lsp'
 Plug 'mattn/vim-lsp-settings'
 Plug 'preservim/nerdtree'
@@ -62,7 +62,7 @@ if has('termguicolors')
 endif
 syntax enable
 set background=dark
-colorscheme solarized
+colorscheme solarized8
 
 let mapleader = " "
 
@@ -125,7 +125,7 @@ nnoremap <leader>q :copen<Space><CR>
 " Generate ctags (requires `ctags -R` available)
 nnoremap <leader>t :!ctags -R .<CR><CR>
 
-" Paste from system clipboard
+" Copy paste from system clipboard
 vnoremap <leader>y "+y
 nnoremap <leader>p "+p
 nnoremap <leader>P "+P
@@ -193,3 +193,4 @@ set sessionoptions=curdir,folds,help,tabpages,winsize,globals
 autocmd BufWritePost *.rb,*.js,*.py,*.c,*.cpp silent! !ctags -R .
 autocmd VimLeave * call SaveSession()
 autocmd VimEnter * nested call RestoreSession()
+hi Normal guibg=NONE ctermbg=NONE
